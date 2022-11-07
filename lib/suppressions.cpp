@@ -47,6 +47,21 @@ static bool isAcceptedErrorIdChar(char c)
     }
 }
 
+static bool validDrive( const std::string& str_ )
+{
+#ifdef WIN32
+  if ( ( ( str_[ 0 ] >= 'A' && str_[ 0 ] <= 'Z' ) ||
+         ( str_[ 0 ] >= 'a' && str_[ 0 ] <= 'z' ) ) && str_[ 1 ] == ':' )
+  {
+    return true;
+  }
+ 
+  return false;
+#else
+  return true; // Always true on anything else other than Windows.
+#endif
+}
+
 std::string Suppressions::parseFile(std::istream &istr)
 {
     // Change '\r' to '\n' in the istr
@@ -198,7 +213,7 @@ std::string Suppressions::addSuppressionLine(const std::string &line)
             const std::string::size_type pos = suppression.fileName.rfind(':');
 
             // if a colon is found and there is no dot after it..
-            if (pos != std::string::npos &&
+            if (!validDrive( suppression.fileName ) && pos != std::string::npos &&
                 suppression.fileName.find('.', pos) == std::string::npos) {
                 // Try to parse out the line number
                 try {
@@ -209,7 +224,10 @@ std::string Suppressions::addSuppressionLine(const std::string &line)
                 }
 
                 if (suppression.lineNumber != Suppressions::Suppression::NO_LINE) {
-                    suppression.fileName.erase(pos);
+                    if ( !validDrive( suppression.fileName ) )
+                    {
+                        suppression.fileName.erase(pos);
+                    }
                 }
             }
         }
